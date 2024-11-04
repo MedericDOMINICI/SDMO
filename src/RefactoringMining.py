@@ -226,7 +226,9 @@ def run():
     
     repos_dir = "repos"
     results_dir = "results"
-    project_names = json.loads("repos_names.json")
+
+    with open("repos_names.json", "r") as f:
+        project_names = json.load(f)
 
     for project in os.listdir(repos_dir):
 
