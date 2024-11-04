@@ -226,9 +226,8 @@ def run():
     
     repos_dir = "repos"
     results_dir = "results"
+    project_names = json.loads("repos_names.json")
 
-    # I've been testing with individual projects, but it should work for all projects too
-    #for project in ["commons-numbers.git"]:
     for project in os.listdir(repos_dir):
 
         result_dir_path = os.path.join(results_dir, project)
@@ -237,6 +236,9 @@ def run():
         if os.path.exists(result_dir_path):
             if os.path.exists(os.path.join(result_dir_path, "ListOfRefactoringCommits.json")):
                 continue
+
+        if project not in project_names:
+            continue
 
         project_path = os.path.join(repos_dir, project)
         result_dir_path = os.path.join(results_dir, project)
