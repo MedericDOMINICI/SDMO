@@ -106,9 +106,10 @@ def analyze_commit_effort(repo_path, commit_hash):
     # Retourner la différence absolue
     return abs(current_loc - previous_loc)
 
-def analyze_developer_effort(refactoring_results_path, repo_path):
+def analyze_developer_effort(refactoring_results_path, repo_path, output_file):
     """
-    Analyse l'effort des développeurs à partir des résultats de RefactoringMiner.
+    Analyse l'effort des développeurs à partir des résultats de RefactoringMiner et 
+    enregistre les données dans le fichier JSON spécifié.
     """
     try:
         with open(refactoring_results_path, 'r') as f:
@@ -155,10 +156,17 @@ def analyze_developer_effort(refactoring_results_path, repo_path):
             
             for refactoring in commit.get('refactorings', []):
                 refactoring_effort[refactoring['type']] += tloc
-        
+
         if not checkout_commit(repo_path, 'HEAD'):
             print("Attention: Impossible de revenir au commit HEAD")
-        
+
+        # Enregistrer les résultats dans le fichier JSON spécifié
+        with open(output_file, 'w') as outfile:
+            json.dump({
+                'developer_effort': dict(developer_effort),
+                'refactoring_effort': dict(refactoring_effort)
+            }, outfile, indent=4)
+
         return {
             'developer_effort': dict(developer_effort),
             'refactoring_effort': dict(refactoring_effort)
@@ -180,23 +188,15 @@ def run():
             
         print(f"\nAnalysing effort for {project}...")
         
-        refactoring_results = os.path.join(results_dir, project, "ListOfCommits.json")
+        refactoring_results = os.path.join(results_dir, project, "ListOfRefactoringCommits.json")
         if not os.path.exists(refactoring_results):
-            print(f"Pas de résultats trouvés pour {project}")
+            print(f"No result for project {project}")
             continue
             
-        results = analyze_developer_effort(refactoring_results, project_path)
+        output_json = os.path.join(results_dir, project, "DeveloperEffort_mining.json")
+        results = analyze_developer_effort(refactoring_results, project_path, output_json)
         
-        # Afficher les résultats
-        print("\nEffort par développeur (TLOC):")
-        print("-" * 40)
-        for dev, tloc in results['developer_effort'].items():
-            print(f"{dev:<30} | {tloc:>8}")
-            
-        print("\nEffort par type de refactoring (TLOC):")
-        print("-" * 40)
-        for refactoring_type, tloc in results['refactoring_effort'].items():
-            print(f"{refactoring_type:<30} | {tloc:>8}")
+        print(f"Résultats enregistrés dans {output_json}")
 
 if __name__ == "__main__":
     run()

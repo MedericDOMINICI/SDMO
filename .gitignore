@@ -1,10 +1,16 @@
-backup/
 myenv/
 RefactoringMiner-3.0.9/
 repos/
 results/
 repos_urls.json
+repos_names.json
 sonar_measures.csv
+
+# mede specific rules
+all_repos/
+backup/
+chunck2_refactoring_results/
+
 
 
 # Byte-compiled / optimized / DLL files
