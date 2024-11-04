@@ -8,20 +8,26 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
 def find_analyzed_commits(result_dir_path):
-
+    """Find commits that were already analyzed"""
     commit_set = set()
     invalid_json_files = []
 
+    # Return empty values if the result directory does not exist yet
+    if not os.path.exists(result_dir_path):
+        return commit_set, invalid_json_files
+
     for file in os.listdir(result_dir_path):
 
-        with open(os.path.join(result_dir_path, file), "r") as f:
+        file_path = os.path.join(result_dir_path, file)
+        
+        with open(file_path, "r") as f:
 
             try:
                 data = json.load(f)
                 for commit in data["commits"]:
                     commit_set.add(commit["sha1"])
             except:
-                invalid_json_files.append(os.path.join(result_dir_path, file))
+                invalid_json_files.append(file_path)
 
     return commit_set, invalid_json_files
 
@@ -36,19 +42,29 @@ def chunk_commits(repo_path, result_dir_path, chunk_size=100):
     # Find commits that were already analyzed. This will be empty if this is a new repository
     # If there are chunks, this will allow the program to get back to its previous state
     commit_set, invalid_json_files = find_analyzed_commits(result_dir_path)
-    commits = list(set(result.stdout.strip().split('\n')) - commit_set)
 
+    # Find all commit hashes from the output of the command above
+    all_commits = result.stdout.strip().split('\n')
+
+    # Filter out the commits that were already analyzed
+    # as in, create a new list with only the commits not found in commit_set
+    # This operation should preserve the order of the commits,
+    # but might not do so if the program has previously failed to preserve the order
+    commits = [x for x in all_commits if x not in commit_set]
+
+    # Delete invalid JSON files that appear if the program was terminated while processing a chunk
     for file in invalid_json_files:
         print(f"Removing malformed JSON file {file} to reprocess it...")
         os.remove(file)
 
     print(f"Found {len(commits)} remaining commits")
 
+    # Return a list containing the commit chunks
     return [commits[i:i + chunk_size] for i in range(0, len(commits), chunk_size)]
  
 def run_refactoring_miner_chunk(args):
     counter, total_chunks, repo_path, result_dir_path, start_commit, end_commit = args
-    REFACTORING_MINER_PATH = os.path.join(os.getcwd(), "RefactoringMiner-3.0.9", "bin", "RefactoringMiner")
+    REFACTORING_MINER_PATH = os.path.join(os.getcwd(), "RefactoringMiner-3.0.9", "bin", "RefactoringMiner.bat")
     
     chunk_output = os.path.join(os.getcwd(), result_dir_path, f"chunk_{start_commit[:8]}_{end_commit[:8]}.json")
     repo_path = os.path.join(os.getcwd(), repo_path)
@@ -71,8 +87,9 @@ def run_refactoring_miner_chunk(args):
         print(f"{os.path.dirname(chunk_output)} does not exist. Creating it...")
         os.makedirs(os.path.dirname(chunk_output))
 
+    # Set the Xmx flag to something much less if your computer is not that powerful
     env = os.environ.copy()
-    env["_JAVA_OPTIONS"] = "-Xmx12G"  # Reduced memory per process
+    env["_JAVA_OPTIONS"] = "-Xmx2G"
     
     try:
         print(f"Processing chunk {start_commit[:8]}-{end_commit[:8]}")
@@ -130,6 +147,7 @@ def run_refactoring_miner(repo_path, result_dir_path):
         counter += 1
 
     # Calculate optimal number of workers based on CPU cores and memory
+    # 1 for now to let the script run in the background
     num_workers = 1 #min(os.cpu_count() or 1, 1)  # Limit to 4 parallel processes
 
     print(f"Processing {total_chunks} chunks with {num_workers} workers...")
