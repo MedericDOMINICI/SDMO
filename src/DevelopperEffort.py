@@ -7,11 +7,10 @@ from collections import defaultdict
 
 def run_scc(repo_path):
     """
-    Exécute scc sur le répertoire et retourne le total des lignes de code
-    pour les langages de programmation reconnus.
+    Executes scc and return the TLOC by programming language for a repository
     """
 
-    # Liste des langages de programmation selon TIOBE
+    # Shorten list of programming languages since we struggles to compute data, so we considered to cut some programming languages
     PROGRAMMING_LANGUAGES = {
     'Java', 'Python', 'C++', 'C#', 'JavaScript', 'PHP', 'C', 'R', 'Swift', 
     'Go', 'Rust', 'Ruby', 'Kotlin', 'TypeScript'
@@ -29,23 +28,20 @@ def run_scc(repo_path):
         
         total_loc = 0
         for lang_data in languages_data:
-            # Utiliser 'Name' au lieu de 'Language'
             if lang_data.get('Name') in PROGRAMMING_LANGUAGES:
-                # Utiliser 'Lines' pour le total des lignes
                 total_loc += lang_data.get('Lines', 0)
-                # print(f"Ajout de {lang_data.get('Lines', 0)} lignes pour {lang_data.get('Name')}")
                 
         return total_loc
     except subprocess.CalledProcessError as e:
-        print(f"Erreur lors de l'exécution de scc: {e}")
+        print(f"Eror executing scc: {e}")
         return 0
     except json.JSONDecodeError as e:
-        print(f"Erreur lors du décodage JSON de scc: {e}")
+        print(f"Error decoding JSON from scc: {e}")
         return 0
 
 def checkout_commit(repo_path, commit_hash):
     """
-    Checkout un commit spécifique dans le répertoire.
+    Checkout a specific commit in a directory
     """
     try:
         process = subprocess.run(
@@ -56,17 +52,14 @@ def checkout_commit(repo_path, commit_hash):
             text=True
         )
         if process.returncode != 0:
-            print(f"Erreur lors du checkout du commit {commit_hash}: {process.stderr}")
+            print(f"Checkout error {commit_hash}: {process.stderr}")
             return False
         return True
     except subprocess.SubprocessError as e:
-        print(f"Erreur lors du checkout: {e}")
+        print(f"Checkout error: {e}")
         return False
 
 def get_previous_commit(repo_path, commit_hash):
-    """
-    Obtient le hash du commit précédent.
-    """
     try:
         result = subprocess.run(
             ['git', 'rev-parse', f'{commit_hash}^1'],
@@ -76,24 +69,24 @@ def get_previous_commit(repo_path, commit_hash):
             text=True
         )
         if result.returncode != 0:
-            print(f"Erreur lors de la récupération du commit précédent: {result.stderr}")
+            print(f"Error getting previous commit: {result.stderr}")
             return None
         return result.stdout.strip()
     except subprocess.SubprocessError as e:
-        print(f"Erreur lors de la commande git rev-parse: {e}")
+        print(f"Error with command git rev-parse: {e}")
         return None
 
 def analyze_commit_effort(repo_path, commit_hash):
     """
-    Calcule le TLOC (Total Lines of Code Changed) pour un commit spécifique.
+    Compute TLOC for a specific commit
     """
-    # Checkout le commit de refactoring
+    # Checkout refactoring commit
     if not checkout_commit(repo_path, commit_hash):
         return 0
         
     current_loc = run_scc(repo_path)
     
-    # Obtenir et checkout le commit précédent
+    # Obtain and checkout the previous commit
     previous_hash = get_previous_commit(repo_path, commit_hash)
     if not previous_hash:
         return 0
@@ -103,19 +96,18 @@ def analyze_commit_effort(repo_path, commit_hash):
         
     previous_loc = run_scc(repo_path)
     
-    # Retourner la différence absolue
+    # Return absolute difference between commits
     return abs(current_loc - previous_loc)
 
 def analyze_developer_effort(refactoring_results_path, repo_path, output_file):
     """
-    Analyse l'effort des développeurs à partir des résultats de RefactoringMiner et 
-    enregistre les données dans le fichier JSON spécifié.
+    Analyze dev effort from RMiner and save the results as a json file
     """
     try:
         with open(refactoring_results_path, 'r') as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Erreur lors de la lecture du fichier JSON {refactoring_results_path}: {e}")
+        print(f"Error reading json file :  {refactoring_results_path}: {e}")
         return {'developer_effort': {}, 'refactoring_effort': {}}
     
     developer_effort = defaultdict(int)
@@ -127,14 +119,14 @@ def analyze_developer_effort(refactoring_results_path, repo_path, output_file):
             if not commit_hash:
                 continue
             
-            # Essayer différentes façons de récupérer l'auteur
+            # Try different ways to get the author
             author = commit.get('authorName')
             if not author:
                 author = commit.get('author', {}).get('name')
             if not author:
                 author = commit.get('author')
                 
-            # Si toujours pas d'auteur, essayer via git
+            # If no author, try with git
             if not author:
                 try:
                     result = subprocess.run(
@@ -158,7 +150,7 @@ def analyze_developer_effort(refactoring_results_path, repo_path, output_file):
                 refactoring_effort[refactoring['type']] += tloc
 
         if not checkout_commit(repo_path, 'HEAD'):
-            print("Attention: Impossible de revenir au commit HEAD")
+            print("Impossible to reset repo to HEAD")
 
         # Enregistrer les résultats dans le fichier JSON spécifié
         with open(output_file, 'w') as outfile:
@@ -173,7 +165,7 @@ def analyze_developer_effort(refactoring_results_path, repo_path, output_file):
         }
         
     except Exception as e:
-        print(f"Erreur lors de l'analyse: {e}")
+        print(f"Error analyzing: {e}")
         checkout_commit(repo_path, 'HEAD')
         return {'developer_effort': {}, 'refactoring_effort': {}}
 
@@ -196,7 +188,7 @@ def run():
         output_json = os.path.join(results_dir, project, "DeveloperEffort_mining.json")
         results = analyze_developer_effort(refactoring_results, project_path, output_json)
         
-        print(f"Résultats enregistrés dans {output_json}")
+        print(f"Results saved : {output_json}")
 
 if __name__ == "__main__":
     run()

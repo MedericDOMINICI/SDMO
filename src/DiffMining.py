@@ -7,7 +7,7 @@ import subprocess
 # Reset git repo at its main branch
 def reset_git_head(repo_path):
     try:
-        # Try master brancj
+        # Try master branch
         subprocess.run(['git', 'checkout', 'master'], 
                       cwd=repo_path, 
                       capture_output=True)
@@ -35,11 +35,13 @@ def reset_git_head(repo_path):
                                     capture_output=True)
                         return True
             except:
-                logging.error(f"Impossible de réinitialiser HEAD pour {repo_path}")
+                logging.error(f"Impossible to reset HEAD {repo_path}")
                 return False
 
-# Analyse difference between commits for a repo
 def find_repo_diff(repo_path, result_dir_path):
+    """
+    Analyse difference between commits for a repo
+    """
     commits_data = []
     
     try:
@@ -50,14 +52,14 @@ def find_repo_diff(repo_path, result_dir_path):
         
         # Reset HEAD
         if not reset_git_head(repo_path):
-            logging.error(f"Unable to analyse {repo_path} - HEAD problem")
+            logging.error(f"Unable to analyze {repo_path} - HEAD problem")
             return
             
         # Instanciate Repository object
         repo = Repository(
             path_to_repo=repo_path,
-            order='reverse',  # Du plus récent au plus ancien
-            include_refs=True  # Inclure toutes les références
+            order='reverse',  # From newer to older
+            include_refs=True
         )
         
         logging.info(f"[Diff mining] : {repo_path}")
@@ -152,16 +154,13 @@ def find_repo_diff(repo_path, result_dir_path):
                 commit_count += 1
                 
                 if commit_count % 10 == 0:
-                    logging.info(f"{commit_count}/{total_commits} commits analysed ...")
+                    logging.info(f"{commit_count}/{total_commits} commits analysed...")
                 
             except Exception as e:
                 logging.error(f"[Error analysing commit] : {commit.hash} : {str(e)}")
                 continue
         
-        logging.info(f"[Repo analyse done] :  {commit_count} treadted.")
-        
-        # Create results directory if not existing
-        #os.makedirs(result_dir_path, exist_ok=True)
+        logging.info(f"[Repo analyse done] :  {commit_count} treated.")
         
         # Save results
         output_file = os.path.join(result_dir_path, 'CommitsDiff.json')

@@ -10,18 +10,21 @@ def check_github_its(owner, repo, token):
     }
     response = requests.get(url, headers=headers)
 
-    # Si la réponse est vide ou retourne un code 404, le projet n'utilise pas les issues GitHub
+    # If 404, project isn't using Github as ITS
     if response.status_code == 404:
-        print(f"{repo} using github as ITS.")
+        print(f"{repo} not using github as ITS.")
         return False
     elif response.status_code == 200 and response.json():
-        print(f"{repo} not using gitHub as ITS.")
+        print(f"{repo} using gitHub as ITS.")
         return True
     else:
         print(f"[Error getting ITS info] : {repo}.")
         return False
 
 def mine_github_issues(owner, repo, token, results_dir):
+    """
+    Mine issues from a github repo that uses github as ITS
+    """
     url = f"https://api.github.com/repos/{owner}/{repo}/issues"
     headers = {
         "Authorization": f"token {token}"
@@ -37,7 +40,7 @@ def mine_github_issues(owner, repo, token, results_dir):
         if response.status_code == 403 and "X-RateLimit-Remaining" in response.headers and response.headers["X-RateLimit-Remaining"] == "0":
             reset_time = int(response.headers["X-RateLimit-Reset"])
             sleep_time = reset_time - int(time.time()) + 1
-            print(f"Rate limit exceeded. Sleeping for {sleep_time} seconds...")
+            print(f"Rate limit exceeded. Sleeping for {sleep_time} seconds")
             time.sleep(sleep_time)
             continue
         

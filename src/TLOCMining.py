@@ -137,7 +137,7 @@ def analyze_developer_effort(refactoring_results_path, repo_path, output_csv_pat
         
         # Get back to head
         if not checkout_commit(repo_path, 'HEAD'):
-            print("Attention: Impossible de revenir au commit HEAD")
+            print("Impossible to reset to HEAD")
         
         with open(output_csv_path, 'w', newline='') as csvfile:
             fieldnames = ['refactoring_hash', 'previous_hash', 'author', 'TLOC']

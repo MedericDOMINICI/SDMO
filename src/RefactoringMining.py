@@ -8,7 +8,9 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
 def find_analyzed_commits(result_dir_path):
-    """Find commits that were already analyzed"""
+    """
+    Find commits that were already analyzed
+    """
     commit_set = set()
     invalid_json_files = []
 
@@ -175,15 +177,12 @@ def parse_refactoring_results(repo_path, json_file):
         for refactoring in commit.get('refactorings', []):
             refactoring_counts[refactoring['type']] += 1
         
-        #get_commit_timestamp_command = ["git", "log", "-1", f"--format=%ci {commit.get('sha1')}"]
         get_commit_timestamp_command = ["git", "-C", repo_path, "log", "-1", f"--format=%ci", commit.get('sha1')]
  
         result = subprocess.run(get_commit_timestamp_command, capture_output=True, text=True)
-        # print(result)
  
         if result.returncode == 0:
             timestamp = result.stdout.strip()
-            # print(timestamp)
             refactoring_times.append(timestamp)
         else:
             print(f"Error retrieving timestamp for commit {commit.get('sha1')}: {result.stderr}")

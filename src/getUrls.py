@@ -3,8 +3,6 @@ import requests as r
 import json
 import os
 
-
-
 # Check if url is 404
 def check_url(url):
     try:
@@ -52,11 +50,6 @@ def run():
 
     for project in project_urls:
         os.makedirs(result_dir+"/"+project)
-
-
-    # project_list
-    # project_urls
-
 
     jsonObject = json.dumps(project_urls, indent=4)
 

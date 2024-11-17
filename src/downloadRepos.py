@@ -30,8 +30,7 @@ def run():
     json_file = "repos_names.json"  # URL storage file
     target_directory = "repos"  # Folder where repos will be cloned
     result_dir = "results"
-
-    # clone_all_repos(json_file, target_directory, result_dir, 3,1)
+    
     clone_all_repos(json_file, target_directory, result_dir)
 
 if __name__ == "__main__":
